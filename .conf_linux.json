@@ -1,0 +1,51 @@
+{
+  "appServe": {
+    "name": "template",
+    "host": "0.0.0.0",
+    "port": "18888"
+  },
+  "PostgresDB": {
+    "host": "template_postgres",
+    "port": "5432",
+    "user": "template",
+    "password": "template",
+    "database": "template"
+  },
+  "Redis": {
+    "host": "template_redis",
+    "port": "6379",
+    "password": "template",
+    "DB": 1,
+    "MaxIdleConns": 28,
+    "MaxActiveConns": 100
+  },
+  "wx": {
+    "loginUrl": "https://api.weixin.qq.com/sns/jscode2session",
+    "appId": "wxb83698613ffea5fe",
+    "secret": "646a56987bd8891c500414f7b61502d5"
+  },
+  "log": {
+    "level": "debug",
+    "dir": "log",
+    "compress": true,
+    "maxSize": 10,
+    "MaxBackups": 30,
+    "MaxAge": 365
+  },
+  "safe": {
+    "jwtSecret": "a3b8c9d7e6f5a4b3c2d1e0f9a8b7c6d5",
+    "jwtRedeemCodeSecret":"b4d3e2f1a0c9b8d7e6f5a4b3c2d1e0f9"
+  },
+ "aliyun": {
+    "ApiKey": "sk-83eb81f0f8264847a917bebddbc7d476",
+    "model":"qwen-vl-max-latest",
+    "languageModel":"qwen-max-latest",
+    "url":"https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+  },
+  "zijie":{
+    "ApiKey":"848ba086-71b4-42bb-a95b-a86990768fbe",
+    "url":"https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+    "model":"doubao-1.5-vision-pro-250328"
+  },
+  "notificationPath":"/app/notification/notification.gob"
+}
