@@ -47,5 +47,8 @@
     "url":"https://ark.cn-beijing.volces.com/api/v3/chat/completions",
     "model":"doubao-1.5-vision-pro-250328"
   },
-  "notificationPath":"/app/notification/notification.gob"
+  "notificationPath":"/app/notification/notification.gob",
+  "pool": {
+    "size": 10
+  }
 }
