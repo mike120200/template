@@ -15,7 +15,7 @@ type AppError struct {
 
 // Error 方法让 AppError 实现了 error 接口
 func (e *AppError) Error() string {
-	return fmt.Sprintf("Error %d: %s", e.StatusCode, e.Message)
+	return fmt.Sprintf("code: %d,err: %s", e.StatusCode, e.Message)
 }
 
 func NewAppError(statusCode int, message string) *AppError {
