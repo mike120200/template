@@ -39,7 +39,9 @@ func CreateToken(claims jwt.MapClaims) (string, error) {
 		Logger().Error("token.SignedString error: " + appErr.Error())
 		return "", appErr
 	}
+
 	return tokenString, nil
+
 }
 
 // VerifyToken 验证jwt token
@@ -49,6 +51,7 @@ func VerifyToken(tokenString string) (jwt.Claims, error) {
 		fmt.Println("create logger failed, please check zap logger")
 		return nil, nil
 	}
+
 	if tokenString == "" {
 		err := NewAppError(CommonError, "token is empty")
 		logger.Error(err.Error())
@@ -94,70 +97,64 @@ func VerifyToken(tokenString string) (jwt.Claims, error) {
 
 // GenerateToken 生成 JWT token
 func GenerateToken(userId, username string) (string, error) {
-	key := viper.GetString("safe.jwtSecret")
-	if key == "" {
-		// 使用默認密鑰（僅用於開發環境）
-		key = "default-secret-key-change-in-production"
-	}
-
 	// 設置過期時間（24小時）
 	expirationTime := time.Now().Add(24 * time.Hour)
 
-	// 創建聲明
-	claims := &Claims{
-		UserId:   userId,
-		Username: username,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-			IssuedAt:  time.Now().Unix(),
-			Issuer:    "my_template",
-		},
+	// 創建聲明（轉換為 MapClaims 以便使用 CreateToken）
+	claims := jwt.MapClaims{
+		"user_id":  userId,
+		"username": username,
+		"exp":      expirationTime.Unix(),
+		"iat":      time.Now().Unix(),
+		"iss":      "my_template",
 	}
 
-	// 創建 token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// 簽名 token
-	tokenString, err := token.SignedString([]byte(key))
-	if err != nil {
-		Logger().Error("生成token失敗", zap.Error(err))
-		return "", err
-	}
-
-	return tokenString, nil
+	// 使用 CreateToken 生成 token
+	return CreateToken(claims)
 }
 
 // ParseToken 解析 JWT token
 func ParseToken(tokenString string) (*Claims, error) {
-	key := viper.GetString("safe.jwtSecret")
-	if key == "" {
-		// 使用默認密鑰（僅用於開發環境）
-		key = "default-secret-key-change-in-production"
-	}
-
-	// 解析 token
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		// 驗證簽名方法
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(key), nil
-	})
-
+	// 使用 VerifyToken 驗證並解析 token
+	claims, err := VerifyToken(tokenString)
 	if err != nil {
-		if ve, ok := err.(*jwt.ValidationError); ok {
-			if ve.Errors&jwt.ValidationErrorExpired != 0 {
-				return nil, ErrExpiredToken
-			}
+		// 檢查是否為過期錯誤
+		var ve *jwt.ValidationError
+		if errors.As(err, &ve) && ve.Errors&jwt.ValidationErrorExpired != 0 {
+			return nil, ErrExpiredToken
 		}
-		Logger().Error("解析token失敗", zap.Error(err))
 		return nil, ErrInvalidToken
 	}
 
-	// 獲取聲明
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-		return claims, nil
+	// 將 MapClaims 轉換為 Claims 結構體
+	mapClaims, ok := claims.(jwt.MapClaims)
+	if !ok {
+		return nil, ErrInvalidToken
 	}
 
-	return nil, ErrInvalidToken
+	// 檢查 token 是否過期（通過 exp 字段）
+	if exp, ok := mapClaims["exp"].(float64); ok {
+		if int64(exp) < time.Now().Unix() {
+			return nil, ErrExpiredToken
+		}
+	}
+
+	result := &Claims{}
+	if userId, ok := mapClaims["user_id"].(string); ok {
+		result.UserId = userId
+	}
+	if username, ok := mapClaims["username"].(string); ok {
+		result.Username = username
+	}
+	if exp, ok := mapClaims["exp"].(float64); ok {
+		result.ExpiresAt = int64(exp)
+	}
+	if iat, ok := mapClaims["iat"].(float64); ok {
+		result.IssuedAt = int64(iat)
+	}
+	if iss, ok := mapClaims["iss"].(string); ok {
+		result.Issuer = iss
+	}
+
+	return result, nil
 }
