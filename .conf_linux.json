@@ -42,6 +42,14 @@
     "languageModel":"qwen-max-latest",
     "url":"https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
   },
+  "cos":{
+    "bucket_name": "shanghai-pvc-1363046950",
+    "region": "ap-shanghai",
+    "secret_id":"",
+    "secret_key":"",
+    "timeout": 100,
+    "url":"https://shanghai-pvc-1363046950.cos.ap-shanghai.myqcloud.com/"
+  },
   "zijie":{
     "ApiKey":"848ba086-71b4-42bb-a95b-a86990768fbe",
     "url":"https://ark.cn-beijing.volces.com/api/v3/chat/completions",
