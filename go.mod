@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/gin-gonic/gin v1.10.0
 	github.com/panjf2000/ants/v2 v2.11.3
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0

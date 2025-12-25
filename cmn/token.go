@@ -3,9 +3,24 @@ package cmn
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+)
+
+// Claims JWT 聲明結構
+type Claims struct {
+	UserId   string `json:"user_id"`
+	Username string `json:"username"`
+	jwt.StandardClaims
+}
+
+// 定義錯誤
+var (
+	ErrInvalidToken = errors.New("无效token")
+	ErrExpiredToken = errors.New("token已过期")
 )
 
 func CreateToken(claims jwt.MapClaims) (string, error) {
@@ -75,5 +90,74 @@ func VerifyToken(tokenString string) (jwt.Claims, error) {
 	// 开发期间打印解析出的openId和sessionKey
 
 	return claims, nil
+}
 
+// GenerateToken 生成 JWT token
+func GenerateToken(userId, username string) (string, error) {
+	key := viper.GetString("safe.jwtSecret")
+	if key == "" {
+		// 使用默認密鑰（僅用於開發環境）
+		key = "default-secret-key-change-in-production"
+	}
+
+	// 設置過期時間（24小時）
+	expirationTime := time.Now().Add(24 * time.Hour)
+
+	// 創建聲明
+	claims := &Claims{
+		UserId:   userId,
+		Username: username,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+			IssuedAt:  time.Now().Unix(),
+			Issuer:    "my_template",
+		},
+	}
+
+	// 創建 token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// 簽名 token
+	tokenString, err := token.SignedString([]byte(key))
+	if err != nil {
+		Logger().Error("生成token失敗", zap.Error(err))
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+// ParseToken 解析 JWT token
+func ParseToken(tokenString string) (*Claims, error) {
+	key := viper.GetString("safe.jwtSecret")
+	if key == "" {
+		// 使用默認密鑰（僅用於開發環境）
+		key = "default-secret-key-change-in-production"
+	}
+
+	// 解析 token
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// 驗證簽名方法
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(key), nil
+	})
+
+	if err != nil {
+		if ve, ok := err.(*jwt.ValidationError); ok {
+			if ve.Errors&jwt.ValidationErrorExpired != 0 {
+				return nil, ErrExpiredToken
+			}
+		}
+		Logger().Error("解析token失敗", zap.Error(err))
+		return nil, ErrInvalidToken
+	}
+
+	// 獲取聲明
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, ErrInvalidToken
 }
