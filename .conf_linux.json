@@ -58,5 +58,6 @@
   "notificationPath":"/app/notification/notification.gob",
   "pool": {
     "size": 10
-  }
+  },
+  "upload": "uploads"
 }
